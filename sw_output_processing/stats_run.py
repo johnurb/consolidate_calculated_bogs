@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import pandas as pd 
 import re
 
+
 class ShadowBank:
     def __init__(self, info):
         self.data = {
@@ -30,7 +31,6 @@ class ShadowBank:
 
             }
         }
-
 
 
 def process_sw4stats_file():
@@ -58,11 +58,19 @@ def process_sw4stats_file():
                 desired_bank_data = bank_file_name + ' ' + bank_total_words + ' ' + bank_average_sentence_length + ' ' + bank_bog_index
                 bank_details.append(desired_bank_data.strip())
     
-    for item in bank_details:
-        print(item)
+    return bank_details
     
 
-    
+def objectify_sw4_lines(sw4lines):
+    for line in sw4lines:
+        line_parts = line.split()
+        
+        bank_name = line_parts[0].replace('.docx', '')
+        bank_total_words = float(line_parts[1])
+        bank_average_sentence_length = float(line_parts[2])
+        bank_bog_index = float(line_parts[3])
+
+        print(bank_name, bank_total_words, bank_average_sentence_length, bank_bog_index)
 
 
 def output_to_csv(banks, chunked_instances):    
@@ -99,16 +107,16 @@ def main():
     json_files = sorted(os.listdir(json_directory))
    
     bank_objects = []
-    for json_file in json_files:
-        json_filepath = os.path.join(json_directory, json_file)
-        with open(json_filepath, 'r') as fin:
-            data = json.load(fin)
-            bank_objects.append(ShadowBank(data))
+    #for json_file in json_files:
+    #    json_filepath = os.path.join(json_directory, json_file)
+    #    with open(json_filepath, 'r') as fin:
+    #        data = json.load(fin)
+    #        bank_objects.append(ShadowBank(data))
 
-
-
-
-    #process_sw4stats_file()
+    sw4_lines = process_sw4stats_file()
+    sw4_objects = objectify_sw4_lines(sw4_lines)
+    
+    
 
 
 main()
