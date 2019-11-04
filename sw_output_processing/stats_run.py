@@ -5,6 +5,7 @@ from time import sleep
 from wordcloud import WordCloud, STOPWORDS 
 import matplotlib.pyplot as plt 
 import pandas as pd 
+import re
 
 class ShadowBank:
     def __init__(self, info):
@@ -13,14 +14,14 @@ class ShadowBank:
                 "name": info["name"],
                 "num_pages": info["num_pages"],
                 "master_text": {
-                    "raw_text": info["master_string"],
+                    "raw_text": re.sub(' +', ' ', info["master_string"]),
                     "bog_index": 0,
                     "total_words": 0,
                     "avg_sentence_length": 0,
                     "number_sw_chunks": 0
                 },
                 "refined_text": {
-                    "raw_text": info["refined_master_string"],
+                    "raw_text": re.sub(' +', ' ', info["refined_master_string"]),
                     "bog_index": 0,
                     "total_words": 0,
                     "avg_sentence_length": 0,
@@ -86,20 +87,24 @@ def output_to_csv(banks, chunked_instances):
                     out_string = [bank_name, item_details[1], item_details[2], item_details[3], num_pages, item_details[4]]
 
             writer.writerow(out_string)
+
+
+
+
+
+
+
 def main():
     json_directory = 'bank_jsons'
-    json_files = os.listdir(json_directory)
+    json_files = sorted(os.listdir(json_directory))
+   
+    bank_objects = []
     for json_file in json_files:
-        try:
-            json_filepath = os.path.join(json_directory, json_file)
-            with open(json_filepath, 'r') as fin:
-                data = json.load(fin)
-        
-        except Exception as e:
-            print(e)
-            print(json_file)
+        json_filepath = os.path.join(json_directory, json_file)
+        with open(json_filepath, 'r') as fin:
+            data = json.load(fin)
+            bank_objects.append(ShadowBank(data))
 
-        
 
 
 
