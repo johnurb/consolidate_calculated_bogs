@@ -6,6 +6,7 @@ from wordcloud import WordCloud, STOPWORDS
 import matplotlib.pyplot as plt 
 import pandas as pd 
 import re
+import random
 
 
 class ShadowBank:
@@ -19,18 +20,44 @@ class ShadowBank:
                     "bog_index": 0,
                     "total_words": 0,
                     "avg_sentence_length": 0,
-                    "number_sw_chunks": 0
+                    "number_sw_chunks": 1
                 },
                 "refined_text": {
                     "raw_text": re.sub(' +', ' ', info["refined_master_string"]),
                     "bog_index": 0,
                     "total_words": 0,
                     "avg_sentence_length": 0,
-                    "number_sw_chunks": 0
+                    "number_sw_chunks": 1
                 }
-
             }
         }
+    
+    def average_chunked_metrics(self):
+        self.data["bank_details"]["master_text"]["bog_index"] /= self.data["bank_details"]["master_text"]["number_sw_chunks"]
+        self.data["bank_details"]["master_text"]["total_words"] /= self.data["bank_details"]["master_text"]["number_sw_chunks"]
+        self.data["bank_details"]["master_text"]["avg_sentence_length"] /= self.data["bank_details"]["master_text"]["number_sw_chunks"]
+
+        self.data["bank_details"]["refined_text"]["bog_index"] /= self.data["bank_details"]["refined_text"]["number_sw_chunks"]
+        self.data["bank_details"]["refined_text"]["total_words"] /= self.data["bank_details"]["refined_text"]["number_sw_chunks"]
+        self.data["bank_details"]["refined_text"]["avg_sentence_length"] /= self.data["bank_details"]["refined_text"]["number_sw_chunks"]
+
+        
+def make_cloud(bank_name, bank_text):
+    stopwords = set(STOPWORDS)
+    wordcloud = WordCloud(width = 800, height = 800, 
+                background_color ='white', 
+                stopwords = stopwords, 
+                min_font_size = 10).generate(bank_text) 
+                     
+    plt.figure(figsize = (8, 8), facecolor = None) 
+    plt.imshow(wordcloud) 
+    plt.axis("off") 
+    plt.title(bank_name)
+    out_dir = 'clouds'
+    file_name = bank_name.replace(' ','_') + '.png'
+    out_path = os.path.join(out_dir, file_name)
+    plt.savefig(out_path, dpi=1000)
+    plt.close('all')
 
 
 def process_sw4stats_file():
@@ -61,45 +88,80 @@ def process_sw4stats_file():
     return bank_details
     
 
-def objectify_sw4_lines(sw4lines):
-    for line in sw4lines:
-        line_parts = line.split()
-        
-        bank_name = line_parts[0].replace('.docx', '')
-        bank_total_words = float(line_parts[1])
-        bank_average_sentence_length = float(line_parts[2])
-        bank_bog_index = float(line_parts[3])
+def complete_bank_object_information(bank_objects, sw4lines):
+    for bank in bank_objects:
+        cur_bank = bank
+        for cur_line in sw4lines:
+            line = cur_line.split()
+            bank_line_name = line[0].replace('.docx', '')
 
-        print(bank_name, bank_total_words, bank_average_sentence_length, bank_bog_index)
+            if bank_line_name.endswith('refined'):
+                if bank_line_name[0].isdigit() and bank_line_name[1] == '_':
+                    bank_name = bank_line_name[2:].replace('_', ' ').replace('refined', '').strip()
+                    if cur_bank.data['bank_details']['name'] == bank_name:
+                        
+                        cur_bank.data['bank_details']['refined_text']['bog_index'] += float(line[3])
+                        cur_bank.data['bank_details']['refined_text']['total_words'] += int(line[1])
+                        cur_bank.data['bank_details']['refined_text']['avg_sentence_length'] += float(line[2])
+                        cur_bank.data['bank_details']['refined_text']['number_sw_chunks'] += 1
+                
+                else:
+                    bank_name = bank_line_name.replace('_', ' ').replace('refined', '').strip()
+                    if cur_bank.data['bank_details']['name'] == bank_name:
+                       
+                        cur_bank.data['bank_details']['refined_text']['bog_index'] = float(line[3])
+                        cur_bank.data['bank_details']['refined_text']['total_words'] = int(line[1])
+                        cur_bank.data['bank_details']['refined_text']['avg_sentence_length'] = float(line[2])
+                
+            else:
+                if bank_line_name[0].isdigit() and bank_line_name[1] == '_':
+                    bank_name = bank_line_name[2:].replace('_', ' ').replace('all', '').strip()
+                    if cur_bank.data['bank_details']['name'] == bank_name:
+                        
+                        cur_bank.data['bank_details']['master_text']['bog_index'] += float(line[3])
+                        cur_bank.data['bank_details']['master_text']['total_words'] += int(line[1])
+                        cur_bank.data['bank_details']['master_text']['avg_sentence_length'] += float(line[2])
+                        cur_bank.data['bank_details']['master_text']['number_sw_chunks'] += 1
+                
+                else:
+                    bank_name = bank_line_name.replace('_', ' ').replace('all', '').strip()
+                    if cur_bank.data['bank_details']['name'] == bank_name:
+                        
+                        cur_bank.data['bank_details']['master_text']['bog_index'] = float(line[3])
+                        cur_bank.data['bank_details']['master_text']['total_words'] = int(line[1])
+                        cur_bank.data['bank_details']['master_text']['avg_sentence_length'] = float(line[2])
 
 
-def output_to_csv(banks, chunked_instances):    
+def output_to_csv(banks):    
     with open('banks.csv', 'a') as fout:
         writer = csv.writer(fout)
-        header = ['Bank Name', 'Total Words', 'Average Sentence Length', 'Bog Index', 'Number Of Pages', 'Number of StyleWriter Chunks']
+        header = [
+            'Bank Name', 'Number of Website Pages', 'Total Words(Master Text)', 'Average Sentence Length(Master Text)', 'Bog Index(Master Text)', 'Number of StyleWriter Chunks(Master Text)',
+            'Total Words(Refined Text)', 'Average Sentence Length(Refined Text)', 'Bog Index(Refined Text)', 'Number of StyleWriter Chunks(Refined Text)'
+        ]
         writer.writerow(header)
-        for bank in banks:
-            cur_bank = bank
-            bank_name = cur_bank.name
-            total_words = cur_bank.total_words / cur_bank.number_stylewriter_chunks
-            average_sentence = cur_bank.average_sentence_length / cur_bank.number_stylewriter_chunks
-            bog_index = int(cur_bank.data["bank_details"]["bog_index"]) / cur_bank.number_stylewriter_chunks
-            num_pages = int(cur_bank.data["bank_details"]["num_pages"]) / cur_bank.number_stylewriter_chunks
-            number_stylewriter_chunks = cur_bank.number_stylewriter_chunks
 
-            out_string = [bank_name, total_words, average_sentence, bog_index, num_pages, number_stylewriter_chunks]
-          
-            for item in chunked_instances:
-                item_details = item.get_details()
-                if item_details[0] == bank_name:
-                    out_string = [bank_name, item_details[1], item_details[2], item_details[3], num_pages, item_details[4]]
+        for bank in banks:
+            bank_name = bank.data['bank_details']['name']
+            bank_num_pages = bank.data['bank_details']['num_pages']
+
+            master_total_words = bank.data['bank_details']['master_text']['total_words']
+            master_avg_sent_len = bank.data['bank_details']['master_text']['avg_sentence_length']
+            master_bog_index = bank.data['bank_details']['master_text']['bog_index']
+            master_num_sw_chunks = bank.data['bank_details']['master_text']['number_sw_chunks']
+
+            refined_total_words = bank.data['bank_details']['refined_text']['total_words']
+            refined_avg_sent_len = bank.data['bank_details']['refined_text']['avg_sentence_length']
+            refined_bog_index = bank.data['bank_details']['refined_text']['bog_index']
+            refined_num_sw_chunks = bank.data['bank_details']['refined_text']['number_sw_chunks']
+
+            out_string = [
+                bank_name, bank_num_pages, 
+                master_total_words, master_avg_sent_len, master_bog_index, master_num_sw_chunks,
+                refined_total_words, refined_avg_sent_len, refined_bog_index, refined_num_sw_chunks
+            ]
 
             writer.writerow(out_string)
-
-
-
-
-
 
 
 def main():
@@ -107,17 +169,19 @@ def main():
     json_files = sorted(os.listdir(json_directory))
    
     bank_objects = []
-    #for json_file in json_files:
-    #    json_filepath = os.path.join(json_directory, json_file)
-    #    with open(json_filepath, 'r') as fin:
-    #        data = json.load(fin)
-    #        bank_objects.append(ShadowBank(data))
+    for json_file in json_files:
+        json_filepath = os.path.join(json_directory, json_file)
+        with open(json_filepath, 'r') as fin:
+            data = json.load(fin)
+            bank_objects.append(ShadowBank(data))
 
     sw4_lines = process_sw4stats_file()
-    sw4_objects = objectify_sw4_lines(sw4_lines)
+    complete_bank_object_information(bank_objects, sw4_lines)
+    for bank in bank_objects:
+        bank.average_chunked_metrics()
     
+    output_to_csv(bank_objects)
     
-
 
 main()
 
