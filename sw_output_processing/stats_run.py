@@ -199,6 +199,33 @@ def output_to_csv(banks):
             writer.writerow(out_string)
 
 
+def output_consolidated_text_files():
+    json_directory = 'bank_jsons'
+    json_files = sorted(os.listdir(json_directory))
+    
+    out_dir = 'consolidated_texts'
+
+    for json_file in json_files:
+        json_filepath = os.path.join(json_directory, json_file)
+        with open(json_filepath, 'r') as fin:
+            data = json.load(fin)
+            bank_name = data['name']
+            master_text = data['master_string']
+            refined_text = data['refined_master_string']
+        
+        # output all text file
+        outfile_name = bank_name.replace(' ', '_') + 'all_text.txt'
+        outfile_path = os.path.join(out_dir, outfile_name)
+        with open(outfile_path, 'w') as fout:
+            fout.write(master_text)
+
+        # output refined text file
+        outfile_name = bank_name.replace(' ', '_') + 'refined_text.txt'
+        outfile_path = os.path.join(out_dir, outfile_name)
+        with open(outfile_path, 'w') as fout:
+            fout.write(refined_text)
+
+
 def main():
     json_directory = 'bank_jsons'
     json_files = sorted(os.listdir(json_directory))
@@ -219,5 +246,6 @@ def main():
     
 
 #main()
-make_cloud()
+#make_cloud()
+output_consolidated_text_files()
 
