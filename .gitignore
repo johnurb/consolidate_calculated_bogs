@@ -4,3 +4,4 @@ __pycache__
 .vscode
 bank_jsons/
 .DS_Store
+clouds/

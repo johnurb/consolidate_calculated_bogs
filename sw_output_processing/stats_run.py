@@ -42,22 +42,57 @@ class ShadowBank:
         self.data["bank_details"]["refined_text"]["avg_sentence_length"] /= self.data["bank_details"]["refined_text"]["number_sw_chunks"]
 
         
-def make_cloud(bank_name, bank_text):
-    stopwords = set(STOPWORDS)
-    wordcloud = WordCloud(width = 800, height = 800, 
-                background_color ='white', 
-                stopwords = stopwords, 
-                min_font_size = 10).generate(bank_text) 
-                     
-    plt.figure(figsize = (8, 8), facecolor = None) 
-    plt.imshow(wordcloud) 
-    plt.axis("off") 
-    plt.title(bank_name)
-    out_dir = 'clouds'
-    file_name = bank_name.replace(' ','_') + '.png'
-    out_path = os.path.join(out_dir, file_name)
-    plt.savefig(out_path, dpi=1000)
-    plt.close('all')
+def make_cloud():
+    jsons_directory = 'bank_jsons'
+    json_files = os.listdir(jsons_directory)
+    for json_file in json_files:
+        json_filepath = os.path.join(jsons_directory, json_file)
+        with open(json_filepath, 'r') as fin:
+            data = json.load(fin)
+            
+        bank_name = data['name']
+        master_text = data['master_string']
+        refined_text = data['refined_master_string']
+
+        if len(master_text) < 10:
+            pass
+        else:
+            # output wordcloud for master text
+            stopwords = set(STOPWORDS)
+            wordcloud = WordCloud(width = 800, height = 800, 
+                        background_color ='white', 
+                        stopwords = stopwords, 
+                        min_font_size = 10).generate(master_text) 
+                            
+            plt.figure(figsize = (8, 8), facecolor = None) 
+            plt.imshow(wordcloud) 
+            plt.axis("off") 
+            plt.title(bank_name + ' ' + ('Master Text'))
+            out_dir = 'clouds'
+            file_name = bank_name.replace(' ','_') + '_master.png'
+            out_path = os.path.join(out_dir, file_name)
+            plt.savefig(out_path, dpi=1000)
+            plt.close('all')
+
+        if len(refined_text) < 10:
+            pass
+        else:
+            # output wordcloud for refined text
+            stopwords = set(STOPWORDS)
+            wordcloud = WordCloud(width = 800, height = 800, 
+                        background_color ='white', 
+                        stopwords = stopwords, 
+                        min_font_size = 10).generate(refined_text) 
+                            
+            plt.figure(figsize = (8, 8), facecolor = None) 
+            plt.imshow(wordcloud) 
+            plt.axis("off") 
+            plt.title(bank_name + ' ' + ('Refined Text'))
+            out_dir = 'clouds'
+            file_name = bank_name.replace(' ','_') + '_refined.png'
+            out_path = os.path.join(out_dir, file_name)
+            plt.savefig(out_path, dpi=1000)
+            plt.close('all')
 
 
 def process_sw4stats_file():
@@ -183,5 +218,6 @@ def main():
     output_to_csv(bank_objects)
     
 
-main()
+#main()
+make_cloud()
 
