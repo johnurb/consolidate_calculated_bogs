@@ -5,3 +5,5 @@ __pycache__
 bank_jsons/
 .DS_Store
 clouds/
+consolidated_texts/
+original_and_refined/
