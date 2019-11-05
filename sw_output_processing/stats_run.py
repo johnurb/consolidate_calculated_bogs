@@ -214,13 +214,13 @@ def output_consolidated_text_files():
             refined_text = data['refined_master_string']
         
         # output all text file
-        outfile_name = bank_name.replace(' ', '_') + 'all_text.txt'
+        outfile_name = bank_name.replace(' ', '_') + '_all_text.txt'
         outfile_path = os.path.join(out_dir, outfile_name)
         with open(outfile_path, 'w') as fout:
             fout.write(master_text)
 
         # output refined text file
-        outfile_name = bank_name.replace(' ', '_') + 'refined_text.txt'
+        outfile_name = bank_name.replace(' ', '_') + '_refined_text.txt'
         outfile_path = os.path.join(out_dir, outfile_name)
         with open(outfile_path, 'w') as fout:
             fout.write(refined_text)
